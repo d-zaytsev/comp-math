@@ -25,24 +25,24 @@ jobs:
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{BUILD_FOLDER}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{env.BUILD_FOLDER}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{BUILD_FOLDER}} --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{env.BUILD_FOLDER}} --config ${{env.BUILD_TYPE}}
 
     - name: Test
-      working-directory: ${{BUILD_FOLDER}}
+      working-directory: ${{env.BUILD_FOLDER}}
       # Execute tests defined by the CMake configuration.
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest -C ${{env.BUILD_TYPE}}
 
     - name: Run main
-      working-directory: ${{BUILD_FOLDER}}
+      working-directory: ${{env.BUILD_FOLDER}}
       run: ./main > output.txt
 
     - name: Upload Results
       uses: actions/upload-artifact@v2
       with:
         name: main-output
-        path: ${{BUILD_FOLDER}}/output.txt
+        path: ${{env.BUILD_FOLDER}}/output.txt
