@@ -34,6 +34,9 @@ void test(int repeats, int threads, void (*alg)(int, double, double **, double *
 /// @brief Приминение условий
 void prepare(int N, double **u, double **f);
 
+/// @brief Простое краевое условие
+void prepare2(int N, double **u, double **f);
+
 int main(int argc, char *argv[])
 {
     int N = 100;
@@ -49,7 +52,7 @@ int main(int argc, char *argv[])
     }
 
     int threads[] = {1, 2, 4, 8, 16};
-    int repeats = 3;
+    int repeats = 10;
 
     for (int i = 0; i < 5; i++)
     {
@@ -421,6 +424,46 @@ void prepare(int N, double **u, double **f)
             else if (x == N + 1) // правая грань
             {
                 u[x][y] = 3 * y * y;
+            }
+            else
+            {
+                u[x][y] = min + (rand() / div);
+            }
+        }
+    }
+}
+void prepare2(int N, double **u, double **f)
+{
+    // Простое краевое условие
+
+    double max = 100.0;
+    double min = -100.0;
+    double range = (max - min);
+    double div = RAND_MAX / range;
+
+    // заполнение значениями
+    for (int x = 0; x <= N + 1; x++)
+    {
+        for (int y = 0; y <= N + 1; y++)
+        {
+            // f(x,y) = 0 на всём D
+            f[x][y] = 0.0;
+
+            if (y == 0) // нижняя грань
+            {
+                u[x][y] = 0;
+            }
+            else if (x == 0) // левая грань
+            {
+                u[x][y] = y;
+            }
+            else if (y == N + 1) // верхняя грань
+            {
+                u[x][y] = 1;
+            }
+            else if (x == N + 1) // правая грань
+            {
+                u[x][y] = 2;
             }
             else
             {
