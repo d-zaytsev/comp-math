@@ -5,10 +5,10 @@ The results of testing these algorithms are stored in artifacts. The efficiency 
 ## Boundary value problem
 The boundary value problem was chosen to show the ability of the algorithms to process complex functions at the boundaries of the domain.
 ## Experiment conditions
-**OC**: Ubuntu 23.10 x86_64
-**PC**: VivoBook_ASUSLaptop X513EQN_S5
-**CPU**: 11th Gen Intel i7-1165G7 (4 cores, 8 threads)
-**For comparison** I use conditions from the book and my own conditions (you can find them in *trig_cond()*) 
+- **OC**: Ubuntu 23.10 x86_64
+- **PC**: VivoBook_ASUSLaptop X513EQN_S5
+- **CPU**: 11th Gen Intel i7-1165G7 (4 cores, 8 threads)
+- **For comparison** I use conditions from the book and my own conditions (you can find them in *trig_cond()*) 
 ## Results
 - Too many threads can harm performance (in my case, 16 threads work much slower than 8 due to amount of logic threads in my laptop).
 - Optimizing settings in compiler (*gcc -O3/-O2/-O1*) greatly affect performance (both for parallel and sequential algorithms, regardless of the number of threads)
