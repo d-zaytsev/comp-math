@@ -3,6 +3,9 @@
 #include <math.h>
 #include <omp.h>
 
+#define min(x, y) (((x) < (y)) ? (x) : (y))
+#define max(x, y) (((x) > (y)) ? (x) : (y))
+
 /// @brief Последовательный алгоритм Гаусса-Зейделя
 /// @param N количество узлов по каждой из координат области D
 /// @param eps граница (k), после которой приближаться дальше бессмысленно
@@ -31,8 +34,8 @@ void async_alg5(int N, double eps, double **u, double **f);
 /// @param alg Сам алгоритм (и дальше аргументы его)
 void test(int repeats, int threads, void (*alg)(int, double, double **, double **), int N, double eps, double **u, double **f);
 
-/// @brief Приминение условий
-void prepare(int N, double **u, double **f);
+/// @brief Приминение условий из книги
+void book_cond(int N, double **u, double **f);
 
 /// @brief Простое краевое условие
 void prepare2(int N, double **u, double **f);
@@ -52,7 +55,7 @@ int main(int argc, char *argv[])
     }
 
     int threads[] = {1, 2, 4, 8, 16};
-    int repeats = 10;
+    int repeats = 3;
 
     for (int i = 0; i < 5; i++)
     {
@@ -61,17 +64,17 @@ int main(int argc, char *argv[])
         printf("### Algorithm\n");
         test(repeats, threads[i], &alg, N, eps, u, f);
 
-        printf("\n### Parallel algorithm (11.2)\n");
-        test(repeats, threads[i], &async_alg1, N, eps, u, f);
+        // printf("\n### Parallel algorithm (11.2)\n");
+        // test(repeats, threads[i], &async_alg1, N, eps, u, f);
 
-        printf("\n### Parallel algorithm (11.3)\n");
-        test(repeats, threads[i], &async_alg2, N, eps, u, f);
+        // printf("\n### Parallel algorithm (11.3)\n");
+        // test(repeats, threads[i], &async_alg2, N, eps, u, f);
 
-        printf("\n### Parallel algorithm (11.4)\n");
-        test(repeats, threads[i], &async_alg3, N, eps, u, f);
+        // printf("\n### Parallel algorithm (11.4)\n");
+        // test(repeats, threads[i], &async_alg3, N, eps, u, f);
 
-        printf("\n### Parallel algorithm (11.5)\n");
-        test(repeats, threads[i], &async_alg4, N, eps, u, f);
+        // printf("\n### Parallel algorithm (11.5)\n");
+        // test(repeats, threads[i], &async_alg4, N, eps, u, f);
 
         printf("\n### Parallel algorithm (11.6)\n");
         test(repeats, threads[i], &async_alg5, N, eps, u, f);
@@ -87,6 +90,8 @@ int main(int argc, char *argv[])
     free(f);
 }
 
+#define NB_F 10 // делитель для размеров блока
+
 void async_alg5(int N, double eps, double **u, double **f)
 {
     omp_lock_t dmax_lock;
@@ -97,7 +102,7 @@ void async_alg5(int N, double eps, double **u, double **f)
     int nx;
 
     const int chunk = N / 10; // размер последовательного участка
-    const int NB = 32;        // количество блоков
+    const int NB = N * NB_F;  // количество блоков
     double dm[N + 1];
 
     int x, y;
@@ -116,8 +121,8 @@ void async_alg5(int N, double eps, double **u, double **f)
                 const int x_s = i * NB + 1;
                 const int y_s = j * NB + 1;
 
-                const int x_e = (x + NB) > N - 1 ? N - 1 : x + NB; // min
-                const int y_e = (x + NB) > N - 1 ? N - 1 : x + NB;
+                const int x_e = min((x + NB), N - 1);
+                const int y_e = min((y + NB), N - 1);
 
                 for (x = x_s; x < x_e; x++)
                     for (y = y_s; y < y_e; y++) // проходимся по границе каждого куска
@@ -382,7 +387,7 @@ void test(int repeats, int threads, void (*alg)(int, double, double **, double *
 
     for (int i = 0; i < repeats; i++)
     {
-        prepare(N, u, f);
+        book_cond(N, u, f);
         double time = omp_get_wtime();
         alg(N, eps, u, f);
         results[i] = omp_get_wtime() - time;
@@ -392,7 +397,7 @@ void test(int repeats, int threads, void (*alg)(int, double, double **, double *
 
     printf("Result: %f\n", average / repeats);
 }
-void prepare(int N, double **u, double **f)
+void book_cond(int N, double **u, double **f)
 {
     // Пусть будет квадратная область с граничными условиями (ниже)
     // Для рандома
