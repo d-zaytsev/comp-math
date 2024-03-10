@@ -73,6 +73,8 @@ int main(int argc, char *argv[])
         printf("### Parallel alg 11.6 (book conditions)\n");
         test(repeats, threads[i], &async_alg5, book_cond, N, eps, u, f);
 
+        // ---
+
         printf("### Iterative algorithm (my conditions)\n");
         test(repeats, threads[i], &default_alg, trig_cond, N, eps, u, f);
 
