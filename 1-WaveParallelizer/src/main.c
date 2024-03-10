@@ -5,7 +5,7 @@
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
-#define NB_F 10 // делитель для размеров блока
+#define NB_F 10 // размер блока
 
 typedef void (*alg)(int, double, double **, double **);
 typedef void (*prepare)(int, double **, double **);
@@ -102,7 +102,8 @@ void async_alg5(int N, double eps, double **u, double **f)
     int nx;
 
     const int chunk = N / 10; // размер последовательного участка
-    const int NB = N * NB_F;  // количество блоков
+    const int bsize = NB_F;
+    const int NB = (N + 1) / bsize; // количество блоков
     double dm[N + 1];
 
     int x, y;
@@ -118,11 +119,11 @@ void async_alg5(int N, double eps, double **u, double **f)
             {
                 j = nx - i; // отн. блока
 
-                const int x_s = i * NB + 1;
-                const int y_s = j * NB + 1;
+                const int x_s = i * bsize + 1;
+                const int y_s = j * bsize + 1;
 
-                const int x_e = min((x + NB), N - 1);
-                const int y_e = min((y + NB), N - 1);
+                const int x_e = min((x + bsize), N - 1);
+                const int y_e = min((y + bsize), N - 1);
 
                 for (x = x_s; x < x_e; x++)
                     for (y = y_s; y < y_e; y++) // проходимся по границе каждого куска
@@ -144,11 +145,11 @@ void async_alg5(int N, double eps, double **u, double **f)
             {
                 j = 2 * (NB - 1) - nx - i;
 
-                const int x_s = i * NB + 1;
-                const int y_s = j * NB + 1;
+                const int x_s = i * bsize + 1;
+                const int y_s = j * bsize + 1;
 
-                const int x_e = (x + NB) > N - 1 ? N - 1 : x + NB; // min
-                const int y_e = (x + NB) > N - 1 ? N - 1 : x + NB;
+                const int x_e = min((x + bsize), N - 1);
+                const int y_e = min((y + bsize), N - 1);
 
                 for (x = x_s; x < x_e; x++)
                     for (y = y_s; y < y_e; y++)
