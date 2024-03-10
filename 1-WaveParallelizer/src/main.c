@@ -42,7 +42,7 @@ void test(int repeats, int threads, alg run, prepare p, int N, double eps, doubl
 void book_cond(int N, double **u, double **f);
 
 /// @brief Простое краевое условие
-void prepare2(int N, double **u, double **f);
+void trig_cond(int N, double **u, double **f);
 
 int main(int argc, char *argv[])
 {
@@ -61,27 +61,23 @@ int main(int argc, char *argv[])
     int threads[] = {1, 2, 4, 8, 16};
     int repeats = 3;
 
+    printf("Book conditions\n");
+
     for (int i = 0; i < 5; i++)
     {
-        printf("\n|Threads: %i|\n", threads[i]);
+        printf("\nThreads: %i\n", threads[i]);
 
-        printf("### Algorithm\n");
+        printf("### Iterative algorithm (book conditions)\n");
         test(repeats, threads[i], &default_alg, book_cond, N, eps, u, f);
 
-        printf("\n### Parallel algorithm (11.2)\n");
-        test(repeats, threads[i], &async_alg1, book_cond, N, eps, u, f);
-
-        printf("\n### Parallel algorithm (11.3)\n");
-        test(repeats, threads[i], &async_alg2, book_cond, N, eps, u, f);
-
-        printf("\n### Parallel algorithm (11.4)\n");
-        test(repeats, threads[i], &async_alg3, book_cond, N, eps, u, f);
-
-        printf("\n### Parallel algorithm (11.5)\n");
-        test(repeats, threads[i], &async_alg4, book_cond, N, eps, u, f);
-
-        printf("\n### Parallel algorithm (11.6)\n");
+        printf("### Parallel alg 11.6 (book conditions)\n");
         test(repeats, threads[i], &async_alg5, book_cond, N, eps, u, f);
+
+        printf("### Iterative algorithm (my conditions)\n");
+        test(repeats, threads[i], &default_alg, trig_cond, N, eps, u, f);
+
+        printf("### Parallel alg 11.6 (my conditions)\n");
+        test(repeats, threads[i], &async_alg5, trig_cond, N, eps, u, f);
     }
 
     for (int i = 0; i <= N + 1; i++)
@@ -439,43 +435,25 @@ void book_cond(int N, double **u, double **f)
         }
     }
 }
-void prepare2(int N, double **u, double **f)
+void trig_cond(int N, double **u, double **f)
 {
-    // Простое краевое условие
-
     double max = 100.0;
     double min = -100.0;
     double range = (max - min);
     double div = RAND_MAX / range;
+
+    double const e10 = pow(2.71, 10);
 
     // заполнение значениями
     for (int x = 0; x <= N + 1; x++)
     {
         for (int y = 0; y <= N + 1; y++)
         {
-            // f(x,y) = 0 на всём D
-            f[x][y] = 0.0;
+            // e^x + e^y
+            f[x][y] = pow(2.71, x) + pow(2.71, y);
 
-            if (y == 0) // нижняя грань
-            {
-                u[x][y] = 0;
-            }
-            else if (x == 0) // левая грань
-            {
-                u[x][y] = y;
-            }
-            else if (y == N + 1) // верхняя грань
-            {
-                u[x][y] = 1;
-            }
-            else if (x == N + 1) // правая грань
-            {
-                u[x][y] = 2;
-            }
-            else
-            {
-                u[x][y] = min + (rand() / div);
-            }
+            // 100*sin(x)^3 + cos(y)*e^10
+            u[x][y] = 100 * pow(sin(x), 3) + cos(y) * e10;
         }
     }
 }
