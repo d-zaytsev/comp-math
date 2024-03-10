@@ -51,7 +51,6 @@ int main(int argc, char *argv[])
     double **u = malloc((N + 2) * sizeof(double *));
     double **f = malloc((N + 2) * sizeof(double *));
 
-    // fill with random values [-100;100]
     for (int i = 0; i <= N + 1; i++)
     {
         u[i] = malloc((N + 2) * sizeof(double));
@@ -60,8 +59,6 @@ int main(int argc, char *argv[])
 
     int threads[] = {1, 2, 4, 8, 16};
     int repeats = 3;
-
-    printf("Book conditions\n");
 
     for (int i = 0; i < 5; i++)
     {
