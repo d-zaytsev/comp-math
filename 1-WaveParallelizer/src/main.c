@@ -5,13 +5,17 @@
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
+#define NB_F 10 // делитель для размеров блока
+
+typedef void (*alg)(int, double, double **, double **);
+typedef void (*prepare)(int, double **, double **);
 
 /// @brief Последовательный алгоритм Гаусса-Зейделя
 /// @param N количество узлов по каждой из координат области D
 /// @param eps граница (k), после которой приближаться дальше бессмысленно
 /// @param u аппроксимация функции u(x, y)
 /// @param f производная
-void alg(int N, double eps, double **u, double **f);
+void default_alg(int N, double eps, double **u, double **f);
 
 /// @brief Первая попытка распараллелить
 void async_alg1(int N, double eps, double **u, double **f);
@@ -32,7 +36,7 @@ void async_alg5(int N, double eps, double **u, double **f);
 /// @param repeats Кол-во повторных запусков алгоритма
 /// @param threads Число потоков
 /// @param alg Сам алгоритм (и дальше аргументы его)
-void test(int repeats, int threads, void (*alg)(int, double, double **, double **), int N, double eps, double **u, double **f);
+void test(int repeats, int threads, alg run, prepare p, int N, double eps, double **u, double **f);
 
 /// @brief Приминение условий из книги
 void book_cond(int N, double **u, double **f);
@@ -42,7 +46,7 @@ void prepare2(int N, double **u, double **f);
 
 int main(int argc, char *argv[])
 {
-    int N = 100;
+    int N = 128;
     double eps = 0.1;
     double **u = malloc((N + 2) * sizeof(double *));
     double **f = malloc((N + 2) * sizeof(double *));
@@ -62,22 +66,22 @@ int main(int argc, char *argv[])
         printf("\n|Threads: %i|\n", threads[i]);
 
         printf("### Algorithm\n");
-        test(repeats, threads[i], &alg, N, eps, u, f);
+        test(repeats, threads[i], &default_alg, book_cond, N, eps, u, f);
 
-        // printf("\n### Parallel algorithm (11.2)\n");
-        // test(repeats, threads[i], &async_alg1, N, eps, u, f);
+        printf("\n### Parallel algorithm (11.2)\n");
+        test(repeats, threads[i], &async_alg1, book_cond, N, eps, u, f);
 
-        // printf("\n### Parallel algorithm (11.3)\n");
-        // test(repeats, threads[i], &async_alg2, N, eps, u, f);
+        printf("\n### Parallel algorithm (11.3)\n");
+        test(repeats, threads[i], &async_alg2, book_cond, N, eps, u, f);
 
-        // printf("\n### Parallel algorithm (11.4)\n");
-        // test(repeats, threads[i], &async_alg3, N, eps, u, f);
+        printf("\n### Parallel algorithm (11.4)\n");
+        test(repeats, threads[i], &async_alg3, book_cond, N, eps, u, f);
 
-        // printf("\n### Parallel algorithm (11.5)\n");
-        // test(repeats, threads[i], &async_alg4, N, eps, u, f);
+        printf("\n### Parallel algorithm (11.5)\n");
+        test(repeats, threads[i], &async_alg4, book_cond, N, eps, u, f);
 
         printf("\n### Parallel algorithm (11.6)\n");
-        test(repeats, threads[i], &async_alg5, N, eps, u, f);
+        test(repeats, threads[i], &async_alg5, book_cond, N, eps, u, f);
     }
 
     for (int i = 0; i <= N + 1; i++)
@@ -89,8 +93,6 @@ int main(int argc, char *argv[])
     free(u);
     free(f);
 }
-
-#define NB_F 10 // делитель для размеров блока
 
 void async_alg5(int N, double eps, double **u, double **f)
 {
@@ -352,7 +354,7 @@ void async_alg1(int N, double eps, double **u, double **f)
         }
     } while (dmax > eps);
 }
-void alg(int N, double eps, double **u, double **f)
+void default_alg(int N, double eps, double **u, double **f)
 {
     double h = 1.0 / (N + 1);
     double dmax;
@@ -378,7 +380,7 @@ void alg(int N, double eps, double **u, double **f)
 
     } while (dmax > eps);
 }
-void test(int repeats, int threads, void (*alg)(int, double, double **, double **), int N, double eps, double **u, double **f)
+void test(int repeats, int threads, alg run, prepare p, int N, double eps, double **u, double **f)
 {
     double results[repeats];
     double average = 0;
@@ -387,9 +389,9 @@ void test(int repeats, int threads, void (*alg)(int, double, double **, double *
 
     for (int i = 0; i < repeats; i++)
     {
-        book_cond(N, u, f);
+        p(N, u, f);
         double time = omp_get_wtime();
-        alg(N, eps, u, f);
+        run(N, eps, u, f);
         results[i] = omp_get_wtime() - time;
         average += results[i];
         printf("%f\t", results[i]);
