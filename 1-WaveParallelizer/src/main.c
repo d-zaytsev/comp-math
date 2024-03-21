@@ -57,11 +57,11 @@ int main(int argc, char *argv[])
     {
         printf("\nThreads: %i\n", threads[i]);
 
-        // printf("### Iterative algorithm (book conditions)\n");
-        // test(repeats, threads[i], i == 0, &default_alg, book_cond, N, eps, u, f);
+        printf("### Iterative algorithm (book conditions)\n");
+        test(repeats, threads[i], i == 0, &default_alg, book_cond, N, eps, u, f);
 
-        printf("### Parallel alg 11.6 (book conditions)\n");
-        test(repeats, threads[i], true, &async_alg5, test_cond, N, eps, u, f);
+        printf("### Parallel alg 11.6 (test conditions)\n");
+        test(repeats, threads[i], false, &async_alg5, test_cond, N, eps, u, f);
 
         // ---
     }
@@ -206,6 +206,7 @@ void test(int repeats, int threads, bool save_grid, alg run, prepare p, int N, d
         printf("%.4f\t", results[i]);
     }
 
+    // Потом в питоне график строить можно
     if (save_grid)
     {
         FILE *file = fopen(PATH, "w");
