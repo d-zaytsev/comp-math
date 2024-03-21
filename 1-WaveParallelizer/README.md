@@ -3,7 +3,9 @@ Implementation of algorithms for solving partial differential equations. (openMP
 ## CI/Performance test
 - The results of testing these algorithms are stored in artifacts
 - **Measurements**: on differemt threads (1,2,4,8,16). 5 times run, average value of time was calculated.
-- **Boundary problems**: I choose function sin on borders to show how algorithm will approximate such periodic functions 
+- **Boundary problems**: I choose function sin on borders to show how algorithm will approximate such periodic functions
+![experiment](https://github.com/d-zaytsev/comp-math/assets/113129532/7c546860-52eb-4ec0-8435-54efa46dabdd)
+
 ## Experiment conditions
 - **OC**: Ubuntu 23.10 mantic x86_64
 - **PC**: VivoBook_ASUSLaptop X513EQN_S5
