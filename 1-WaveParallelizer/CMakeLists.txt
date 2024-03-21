@@ -12,6 +12,7 @@ if (OPENMP_FOUND)
 endif()
 
 add_executable(main src/main.c)
+target_link_libraries(main m)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

@@ -3,12 +3,19 @@
 #include <math.h>
 #include <omp.h>
 
+#define min(x, y) (((x) < (y)) ? (x) : (y))
+#define max(x, y) (((x) > (y)) ? (x) : (y))
+#define NB_F 10 // размер блока
+
+typedef void (*alg)(int, double, double **, double **);
+typedef void (*prepare)(int, double **, double **);
+
 /// @brief Последовательный алгоритм Гаусса-Зейделя
 /// @param N количество узлов по каждой из координат области D
 /// @param eps граница (k), после которой приближаться дальше бессмысленно
 /// @param u аппроксимация функции u(x, y)
 /// @param f производная
-void alg(int N, double eps, double **u, double **f);
+void default_alg(int N, double eps, double **u, double **f);
 
 /// @brief Первая попытка распараллелить
 void async_alg1(int N, double eps, double **u, double **f);
@@ -29,22 +36,21 @@ void async_alg5(int N, double eps, double **u, double **f);
 /// @param repeats Кол-во повторных запусков алгоритма
 /// @param threads Число потоков
 /// @param alg Сам алгоритм (и дальше аргументы его)
-void test(int repeats, int threads, void (*alg)(int, double, double **, double **), int N, double eps, double **u, double **f);
+void test(int repeats, int threads, alg run, prepare p, int N, double eps, double **u, double **f);
 
-/// @brief Приминение условий
-void prepare(int N, double **u, double **f);
+/// @brief Приминение условий из книги
+void book_cond(int N, double **u, double **f);
 
 /// @brief Простое краевое условие
-void prepare2(int N, double **u, double **f);
+void trig_cond(int N, double **u, double **f);
 
 int main(int argc, char *argv[])
 {
-    int N = 100;
+    int N = 128;
     double eps = 0.1;
     double **u = malloc((N + 2) * sizeof(double *));
     double **f = malloc((N + 2) * sizeof(double *));
 
-    // fill with random values [-100;100]
     for (int i = 0; i <= N + 1; i++)
     {
         u[i] = malloc((N + 2) * sizeof(double));
@@ -52,29 +58,25 @@ int main(int argc, char *argv[])
     }
 
     int threads[] = {1, 2, 4, 8, 16};
-    int repeats = 10;
+    int repeats = 3;
 
     for (int i = 0; i < 5; i++)
     {
-        printf("\n|Threads: %i|\n", threads[i]);
+        printf("\nThreads: %i\n", threads[i]);
 
-        printf("### Algorithm\n");
-        test(repeats, threads[i], &alg, N, eps, u, f);
+        printf("### Iterative algorithm (book conditions)\n");
+        test(repeats, threads[i], &default_alg, book_cond, N, eps, u, f);
 
-        printf("\n### Parallel algorithm (11.2)\n");
-        test(repeats, threads[i], &async_alg1, N, eps, u, f);
+        printf("### Parallel alg 11.6 (book conditions)\n");
+        test(repeats, threads[i], &async_alg5, book_cond, N, eps, u, f);
 
-        printf("\n### Parallel algorithm (11.3)\n");
-        test(repeats, threads[i], &async_alg2, N, eps, u, f);
+        // ---
 
-        printf("\n### Parallel algorithm (11.4)\n");
-        test(repeats, threads[i], &async_alg3, N, eps, u, f);
+        printf("### Iterative algorithm (my conditions)\n");
+        test(repeats, threads[i], &default_alg, trig_cond, N, eps, u, f);
 
-        printf("\n### Parallel algorithm (11.5)\n");
-        test(repeats, threads[i], &async_alg4, N, eps, u, f);
-
-        printf("\n### Parallel algorithm (11.6)\n");
-        test(repeats, threads[i], &async_alg5, N, eps, u, f);
+        printf("### Parallel alg 11.6 (my conditions)\n");
+        test(repeats, threads[i], &async_alg5, trig_cond, N, eps, u, f);
     }
 
     for (int i = 0; i <= N + 1; i++)
@@ -97,7 +99,8 @@ void async_alg5(int N, double eps, double **u, double **f)
     int nx;
 
     const int chunk = N / 10; // размер последовательного участка
-    const int NB = 32;        // количество блоков
+    const int bsize = NB_F;
+    const int NB = (N + 1) / bsize; // количество блоков
     double dm[N + 1];
 
     int x, y;
@@ -113,11 +116,11 @@ void async_alg5(int N, double eps, double **u, double **f)
             {
                 j = nx - i; // отн. блока
 
-                const int x_s = i * NB + 1;
-                const int y_s = j * NB + 1;
+                const int x_s = i * bsize + 1;
+                const int y_s = j * bsize + 1;
 
-                const int x_e = (x + NB) > N - 1 ? N - 1 : x + NB; // min
-                const int y_e = (x + NB) > N - 1 ? N - 1 : x + NB;
+                const int x_e = min((x + bsize), N - 1);
+                const int y_e = min((y + bsize), N - 1);
 
                 for (x = x_s; x < x_e; x++)
                     for (y = y_s; y < y_e; y++) // проходимся по границе каждого куска
@@ -139,11 +142,11 @@ void async_alg5(int N, double eps, double **u, double **f)
             {
                 j = 2 * (NB - 1) - nx - i;
 
-                const int x_s = i * NB + 1;
-                const int y_s = j * NB + 1;
+                const int x_s = i * bsize + 1;
+                const int y_s = j * bsize + 1;
 
-                const int x_e = (x + NB) > N - 1 ? N - 1 : x + NB; // min
-                const int y_e = (x + NB) > N - 1 ? N - 1 : x + NB;
+                const int x_e = min((x + bsize), N - 1);
+                const int y_e = min((y + bsize), N - 1);
 
                 for (x = x_s; x < x_e; x++)
                     for (y = y_s; y < y_e; y++)
@@ -347,7 +350,7 @@ void async_alg1(int N, double eps, double **u, double **f)
         }
     } while (dmax > eps);
 }
-void alg(int N, double eps, double **u, double **f)
+void default_alg(int N, double eps, double **u, double **f)
 {
     double h = 1.0 / (N + 1);
     double dmax;
@@ -373,7 +376,7 @@ void alg(int N, double eps, double **u, double **f)
 
     } while (dmax > eps);
 }
-void test(int repeats, int threads, void (*alg)(int, double, double **, double **), int N, double eps, double **u, double **f)
+void test(int repeats, int threads, alg run, prepare p, int N, double eps, double **u, double **f)
 {
     double results[repeats];
     double average = 0;
@@ -382,9 +385,9 @@ void test(int repeats, int threads, void (*alg)(int, double, double **, double *
 
     for (int i = 0; i < repeats; i++)
     {
-        prepare(N, u, f);
+        p(N, u, f);
         double time = omp_get_wtime();
-        alg(N, eps, u, f);
+        run(N, eps, u, f);
         results[i] = omp_get_wtime() - time;
         average += results[i];
         printf("%f\t", results[i]);
@@ -392,7 +395,7 @@ void test(int repeats, int threads, void (*alg)(int, double, double **, double *
 
     printf("Result: %f\n", average / repeats);
 }
-void prepare(int N, double **u, double **f)
+void book_cond(int N, double **u, double **f)
 {
     // Пусть будет квадратная область с граничными условиями (ниже)
     // Для рандома
@@ -432,43 +435,25 @@ void prepare(int N, double **u, double **f)
         }
     }
 }
-void prepare2(int N, double **u, double **f)
+void trig_cond(int N, double **u, double **f)
 {
-    // Простое краевое условие
-
     double max = 100.0;
     double min = -100.0;
     double range = (max - min);
     double div = RAND_MAX / range;
+
+    double const e10 = pow(2.71, 10);
 
     // заполнение значениями
     for (int x = 0; x <= N + 1; x++)
     {
         for (int y = 0; y <= N + 1; y++)
         {
-            // f(x,y) = 0 на всём D
-            f[x][y] = 0.0;
+            // e^x + e^y
+            f[x][y] = pow(2.71, x) + pow(2.71, y);
 
-            if (y == 0) // нижняя грань
-            {
-                u[x][y] = 0;
-            }
-            else if (x == 0) // левая грань
-            {
-                u[x][y] = y;
-            }
-            else if (y == N + 1) // верхняя грань
-            {
-                u[x][y] = 1;
-            }
-            else if (x == N + 1) // правая грань
-            {
-                u[x][y] = 2;
-            }
-            else
-            {
-                u[x][y] = min + (rand() / div);
-            }
+            // 100*sin(x)^3 + cos(y)*e^10
+            u[x][y] = 100 * pow(sin(x), 3) + cos(y) * e10;
         }
     }
 }
