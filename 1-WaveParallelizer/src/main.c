@@ -2,12 +2,14 @@
 #include <stdlib.h>
 #include <math.h>
 #include <omp.h>
+#include "stdbool.h"
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
-#define NB_F 10 // размер блока
+#define NB_F 10                                                                  // размер блока
+#define PATH "/home/dmitriy/Desktop/comp-math/1-WaveParallelizer/build/grid.txt" // файл куда сетку сохранять
 
-typedef void (*alg)(int, double, double **, double **);
+typedef int (*alg)(int, double, double **, double **);
 typedef void (*prepare)(int, double **, double **);
 
 /// @brief Последовательный алгоритм Гаусса-Зейделя
@@ -15,28 +17,16 @@ typedef void (*prepare)(int, double **, double **);
 /// @param eps граница (k), после которой приближаться дальше бессмысленно
 /// @param u аппроксимация функции u(x, y)
 /// @param f производная
-void default_alg(int N, double eps, double **u, double **f);
-
-/// @brief Первая попытка распараллелить
-void async_alg1(int N, double eps, double **u, double **f);
-
-/// @brief Уменьшенная частота блокировок потоков
-void async_alg2(int N, double eps, double **u, double **f);
-
-/// @brief 11.4. Метод Гаусса-Якоби (считаем изменения локально)
-void async_alg3(int N, double eps, double **u, double **f);
-
-/// @brief 11.5. Волновая схема вычислений
-void async_alg4(int N, double eps, double **u, double **f);
+int default_alg(int N, double eps, double **u, double **f);
 
 /// @brief 11.6. Волновая схема вычислений (кэш)
-void async_alg5(int N, double eps, double **u, double **f);
+int async_alg5(int N, double eps, double **u, double **f);
 
 /// @brief Несколько раз запускает алгоритм и фиксирует скорость выполнения (через omp).
 /// @param repeats Кол-во повторных запусков алгоритма
 /// @param threads Число потоков
 /// @param alg Сам алгоритм (и дальше аргументы его)
-void test(int repeats, int threads, alg run, prepare p, int N, double eps, double **u, double **f);
+void test(int repeats, int threads, bool save_grid, alg run, prepare p, int N, double eps, double **u, double **f);
 
 /// @brief Приминение условий из книги
 void book_cond(int N, double **u, double **f);
@@ -46,8 +36,12 @@ void trig_cond(int N, double **u, double **f);
 
 int main(int argc, char *argv[])
 {
-    int N = 128;
+    int N = 100;
     double eps = 0.1;
+
+    int threads[] = {1, 2, 4, 8, 16};
+    int repeats = 3;
+
     double **u = malloc((N + 2) * sizeof(double *));
     double **f = malloc((N + 2) * sizeof(double *));
 
@@ -57,26 +51,23 @@ int main(int argc, char *argv[])
         f[i] = malloc((N + 2) * sizeof(double));
     }
 
-    int threads[] = {1, 2, 4, 8, 16};
-    int repeats = 3;
-
     for (int i = 0; i < 5; i++)
     {
         printf("\nThreads: %i\n", threads[i]);
 
         printf("### Iterative algorithm (book conditions)\n");
-        test(repeats, threads[i], &default_alg, book_cond, N, eps, u, f);
+        test(repeats, threads[i], i == 0, &default_alg, book_cond, N, eps, u, f);
 
-        printf("### Parallel alg 11.6 (book conditions)\n");
-        test(repeats, threads[i], &async_alg5, book_cond, N, eps, u, f);
+        // printf("### Parallel alg 11.6 (book conditions)\n");
+        // test(repeats, threads[i], true, &async_alg5, book_cond, N, eps);
 
         // ---
 
-        printf("### Iterative algorithm (my conditions)\n");
-        test(repeats, threads[i], &default_alg, trig_cond, N, eps, u, f);
+        // printf("### Iterative algorithm (my conditions)\n");
+        // test(repeats, threads[i], &default_alg, trig_cond, N, eps, u, f);
 
-        printf("### Parallel alg 11.6 (my conditions)\n");
-        test(repeats, threads[i], &async_alg5, trig_cond, N, eps, u, f);
+        // printf("### Parallel alg 11.6 (my conditions)\n");
+        // test(repeats, threads[i], &async_alg5, trig_cond, N, eps, u, f);
     }
 
     for (int i = 0; i <= N + 1; i++)
@@ -89,7 +80,7 @@ int main(int argc, char *argv[])
     free(f);
 }
 
-void async_alg5(int N, double eps, double **u, double **f)
+int async_alg5(int N, double eps, double **u, double **f)
 {
     omp_lock_t dmax_lock;
     omp_init_lock(&dmax_lock);
@@ -104,6 +95,7 @@ void async_alg5(int N, double eps, double **u, double **f)
     double dm[N + 1];
 
     int x, y;
+    int iters = 0;
 
     do
     {
@@ -172,188 +164,17 @@ void async_alg5(int N, double eps, double **u, double **f)
             omp_unset_lock(&dmax_lock);
         }
 
+        iters++;
     } while (dmax > eps);
+
+    return iters;
 }
-void async_alg4(int N, double eps, double **u, double **f)
-{
-    // Как выполнять те же действия, что и в 11.1?
-    // Будем вычислять волнами (т.е. значения пересчитываются так, чтобы друг на друга не наталкиваться)
-
-    omp_lock_t dmax_lock;
-    omp_init_lock(&dmax_lock);
-    double h = 1.0 / (N + 1);
-    double d, temp, dmax = 0;
-    int i, j;
-
-    double dm[N + 1]; // изменения (массив потому что иначе конфликты)
-    int nx;           // размер волны (отсчёт для j)
-
-    do
-    {
-        dmax = 0; // максимальное изменение u
-        // нарастание волны (nx пробегает границу)
-        for (nx = 1; nx < N + 1; nx++)
-        {
-            dm[nx] = 0;
-#pragma omp parallel for shared(u, nx, dm) private(i, j, temp, d)
-            for (i = 1; i <= nx; i++)
-            {
-                j = nx + 1 - i;
-
-                temp = u[i][j];
-                u[i][j] = 0.25 * (u[i - 1][j] + u[i + 1][j] + u[i][j - 1] + u[i][j + 1] - h * h * f[i][j]);
-                d = fabs(temp - u[i][j]);
-                if (dm[i] < d)
-                    dm[i] = d;
-            }
-        }
-        // дошли до пика волны, теперь затухание
-        for (nx = N - 1; nx > 0; nx--)
-        {
-#pragma omp parallel for shared(u, nx, dm) private(i, j, temp, d)
-            for (i = N - nx + 1; i < N + 1; i++)
-            {
-                j = 2 * N - nx - i + 1;
-                temp = u[i][j];
-                u[i][j] = 0.25 * (u[i - 1][j] + u[i + 1][j] +
-                                  u[i][j - 1] + u[i][j + 1] - h * h * f[i][j]);
-                d = fabs(temp - u[i][j]);
-                if (dm[i] < d)
-                    dm[i] = d;
-            }
-        }
-
-        // находим dmax
-#pragma omp parallel for shared(dm, dmax) private(i)
-        for (i = 1; i < nx + 1; i++)
-        {
-            omp_set_lock(&dmax_lock);
-            if (dmax < dm[i])
-                dmax = dm[i];
-            omp_unset_lock(&dmax_lock);
-        }
-
-    } while (dmax > eps);
-}
-void async_alg3(int N, double eps, double **u, double **f)
-{
-    // Одна из проблем прошлых решений (11.2, 11.3) - race condition,
-    // У нас u считается криво => больше итераций чем нужно,
-    // Можно попробовать изменять не общий u, а считать локально и потом обновлять данные.
-
-    omp_lock_t dmax_lock;
-    omp_init_lock(&dmax_lock);
-    double h = 1.0 / (N + 1);
-    double d, dm, temp, dmax = 0;
-    int i, j;
-    double ucopy[N + 1][N + 1];
-
-    do
-    {
-        dmax = 0;
-
-#pragma omp parallel for shared(u, N, dmax, h, ucopy) private(i, j, d, dm, temp)
-        for (i = 1; i < N + 1; i++)
-        {
-            dm = 0;
-            for (j = 1; j < N + 1; j++)
-            {
-                temp = u[i][j];
-                ucopy[i][j] = 0.25 * (u[i - 1][j] + u[i + 1][j] + u[i][j - 1] + u[i][j + 1] - h * h * f[i][j]);
-
-                d = fabs(temp - ucopy[i][j]);
-
-                if (dm < d)
-                    dm = d;
-            }
-            omp_set_lock(&dmax_lock);
-            if (dmax < dm)
-                dmax = dm;
-            omp_unset_lock(&dmax_lock);
-        }
-
-        // update u
-        for (i = 1; i < N + 1; i++)
-            for (j = 1; j < N + 1; j++)
-                u[i][j] = ucopy[i][j];
-
-    } while (dmax > eps);
-}
-void async_alg2(int N, double eps, double **u, double **f)
-{
-
-    omp_lock_t dmax_lock;
-    omp_init_lock(&dmax_lock);
-    double h = 1.0 / (N + 1);
-    double temp, dmax = 0;
-    int i, j;
-
-    do
-    {
-        dmax = 0;
-        double dm = 0;
-
-#pragma omp parallel for shared(u, N, dmax, h) private(i, j, temp, dm)
-
-        for (int i = 1; i < N + 1; i++)
-        {
-            dm = 0; // локальная (для каждого потока) оценка погрешности
-            for (int j = 1; j < N + 1; j++)
-            {
-                double temp = u[i][j];
-
-                u[i][j] = 0.25 * (u[i - 1][j] + u[i + 1][j] + u[i][j - 1] + u[i][j + 1] - h * h * f[i][j]);
-
-                double d = fabs(temp - u[i][j]);
-
-                if (dm < d)
-                    dm = d;
-            }
-            omp_set_lock(&dmax_lock);
-            if (dmax < dm) // с помощью dm снижаем частоту блокировок
-                dmax = dm;
-            omp_unset_lock(&dmax_lock);
-        }
-
-    } while (dmax > eps);
-}
-void async_alg1(int N, double eps, double **u, double **f)
-{
-    omp_lock_t dmax_lock;
-    omp_init_lock(&dmax_lock);
-
-    double h = 1.0 / (N + 1);
-    double temp, dmax = 0;
-    int i, j;
-    do
-    {
-        dmax = 0;
-#pragma omp parallel for shared(u, N, dmax, h) private(i, j, temp)
-        // общими(shared) являются те переменные, которые изменяться не будут
-        // private переменные будут копироваться для каждого отдельного потока
-        for (int i = 1; i < N + 1; i++)
-        {
-            // второй параллельный for можно убрать, он тут только ресурсы потребляет
-#pragma omp parallel for shared(u, N, dmax, h) private(j, temp)
-            for (int j = 1; j < N + 1; j++)
-            {
-                double temp = u[i][j];
-                u[i][j] = 0.25 * (u[i - 1][j] + u[i + 1][j] +
-                                  u[i][j - 1] + u[i][j + 1] - h * h * f[i][j]);
-                double d = fabs(temp - u[i][j]);
-                omp_set_lock(&dmax_lock); // блокировка во время изменения общих ресурсов
-                // на ожидание впустую тратится много времени
-                if (dmax < d)
-                    dmax = d;
-                omp_unset_lock(&dmax_lock);
-            }
-        }
-    } while (dmax > eps);
-}
-void default_alg(int N, double eps, double **u, double **f)
+int default_alg(int N, double eps, double **u, double **f)
 {
     double h = 1.0 / (N + 1);
     double dmax;
+
+    int iters = 0;
 
     // Значения u при индексах i,j = 0 || i,j = N+1 являются граничными, задаются при постановке задачи
 
@@ -374,12 +195,16 @@ void default_alg(int N, double eps, double **u, double **f)
             }
         }
 
+        iters++;
     } while (dmax > eps);
+
+    return iters;
 }
-void test(int repeats, int threads, alg run, prepare p, int N, double eps, double **u, double **f)
+void test(int repeats, int threads, bool save_grid, alg run, prepare p, int N, double eps, double **u, double **f)
 {
     double results[repeats];
     double average = 0;
+    int iters;
 
     omp_set_num_threads(threads);
 
@@ -387,13 +212,29 @@ void test(int repeats, int threads, alg run, prepare p, int N, double eps, doubl
     {
         p(N, u, f);
         double time = omp_get_wtime();
-        run(N, eps, u, f);
+        iters = run(N, eps, u, f);
         results[i] = omp_get_wtime() - time;
         average += results[i];
+
         printf("%f\t", results[i]);
     }
 
-    printf("Result: %f\n", average / repeats);
+    if (save_grid)
+    {
+        FILE *file = fopen(PATH, "w");
+
+        for (int i = 0; i <= N + 1; i++)
+        {
+            for (int j = 0; j <= N + 1; j++)
+            {
+                fprintf(file, "%f\t", u[i][j]);
+            }
+            fprintf(file, "\n");
+        }
+        fclose(file);
+    }
+
+    printf("Result: %fms, %i iterations\n", average / repeats, iters);
 }
 void book_cond(int N, double **u, double **f)
 {
