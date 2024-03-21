@@ -28,6 +28,10 @@ int async_alg5(int N, double eps, double **u, double **f);
 /// @param alg Сам алгоритм (и дальше аргументы его)
 void test(int repeats, int threads, bool save_grid, alg run, prepare p, int N, double eps, double **u, double **f);
 
+/// @brief Вычисление каждого блока
+/// @return Разница
+double eval(int N, int bsize, double **u, double **f, int i, int j);
+
 /// @brief Приминение условий из книги
 void book_cond(int N, double **u, double **f);
 
@@ -55,11 +59,11 @@ int main(int argc, char *argv[])
     {
         printf("\nThreads: %i\n", threads[i]);
 
-        printf("### Iterative algorithm (book conditions)\n");
-        test(repeats, threads[i], i == 0, &default_alg, book_cond, N, eps, u, f);
+        // printf("### Iterative algorithm (book conditions)\n");
+        // test(repeats, threads[i], i == 0, &default_alg, book_cond, N, eps, u, f);
 
-        // printf("### Parallel alg 11.6 (book conditions)\n");
-        // test(repeats, threads[i], true, &async_alg5, book_cond, N, eps);
+        printf("### Parallel alg 11.6 (book conditions)\n");
+        test(repeats, threads[i], true, &async_alg5, book_cond, N, eps, u, f);
 
         // ---
 
@@ -80,100 +84,10 @@ int main(int argc, char *argv[])
     free(f);
 }
 
-int async_alg5(int N, double eps, double **u, double **f)
-{
-    omp_lock_t dmax_lock;
-    omp_init_lock(&dmax_lock);
-    double h = 1.0 / (N + 1);
-    double d, temp, dmax = 0;
-    int i, j;
-    int nx;
-
-    const int chunk = N / 10; // размер последовательного участка
-    const int bsize = NB_F;
-    const int NB = (N + 1) / bsize; // количество блоков
-    double dm[N + 1];
-
-    int x, y;
-    int iters = 0;
-
-    do
-    {
-        dmax = 0;
-        // нарастание волны (размер волны равен nx+1), двигаемся по блокам
-        for (nx = 0; nx < NB; nx++)
-        {
-#pragma omp parallel for shared(dm, nx) private(i, j, x, y)
-            for (i = 0; i <= nx; i++) // отн. блока
-            {
-                j = nx - i; // отн. блока
-
-                const int x_s = i * bsize + 1;
-                const int y_s = j * bsize + 1;
-
-                const int x_e = min((x + bsize), N - 1);
-                const int y_e = min((y + bsize), N - 1);
-
-                for (x = x_s; x < x_e; x++)
-                    for (y = y_s; y < y_e; y++) // проходимся по границе каждого куска
-                    {
-                        temp = u[x][y];
-                        u[x][y] = 0.25 * (u[x - 1][y] + u[x + 1][y] + u[x][y - 1] + u[x][y + 1] - h * h * f[x][y]);
-                        d = fabs(temp - u[x][y]);
-                        if (dm[x] < d)
-                            dm[x] = d;
-                    }
-            }
-        }
-
-        // затухание волны
-        for (nx = NB - 2; nx >= 0; nx--)
-        {
-#pragma omp parallel for shared(nx) private(i, j, x, y)
-            for (i = 0; i < nx + 1; i++)
-            {
-                j = 2 * (NB - 1) - nx - i;
-
-                const int x_s = i * bsize + 1;
-                const int y_s = j * bsize + 1;
-
-                const int x_e = min((x + bsize), N - 1);
-                const int y_e = min((y + bsize), N - 1);
-
-                for (x = x_s; x < x_e; x++)
-                    for (y = y_s; y < y_e; y++)
-                    {
-                        temp = u[x][y];
-                        u[x][y] = 0.25 * (u[x - 1][y] + u[x + 1][y] + u[x][y - 1] + u[x][y + 1] - h * h * f[x][y]);
-                        d = fabs(temp - u[x][y]);
-                        if (dm[x] < d)
-                            dm[x] = d;
-                    }
-            } // конец параллельной области
-        }
-#pragma omp parallel for shared(dm, dmax) private(i, d)
-        for (i = 1; i < nx + 1; i += chunk)
-        {
-            d = 0; // наиб. значение на куске
-            for (j = i; j < i + chunk; j++)
-                if (d < dm[j])
-                    d = dm[j];
-            omp_set_lock(&dmax_lock);
-            if (dmax < d)
-                dmax = d;
-            omp_unset_lock(&dmax_lock);
-        }
-
-        iters++;
-    } while (dmax > eps);
-
-    return iters;
-}
 int default_alg(int N, double eps, double **u, double **f)
 {
     double h = 1.0 / (N + 1);
     double dmax;
-
     int iters = 0;
 
     // Значения u при индексах i,j = 0 || i,j = N+1 являются граничными, задаются при постановке задачи
@@ -194,11 +108,94 @@ int default_alg(int N, double eps, double **u, double **f)
                     dmax = dm;
             }
         }
+        iters++;
+    } while (dmax > eps);
+
+    return iters;
+}
+int async_alg5(int N, double eps, double **u, double **f)
+{
+    omp_lock_t dmax_lock;
+    omp_init_lock(&dmax_lock);
+    double h = 1.0 / (N + 1);
+    double temp, dmax = 0;
+
+    const int bsize = 64;
+    int NB = 100; // количество блоков
+    double dm[N + 1];
+
+    int iters = 0;
+
+    do
+    {
+        dmax = 0;
+        // нарастание волны (размер волны равен nx+1), двигаемся по блокам
+        for (int nx = 0; nx < NB; nx++)
+        {
+            dm[nx] = 0;
+            int i, j;
+            double d;
+
+#pragma omp parallel for shared(dm, nx, u, f, NB, N, bsize) private(i, j, d)
+            for (i = 0; i < nx + 1; i++) // отн. блока
+            {
+                j = nx - i; // отн. блока
+
+                d = eval(N, bsize, u, f, i, j);
+
+                if (dm[i] < d)
+                    dm[i] = d;
+            }
+        }
+
+        // затухание волны
+        for (int nx = NB; nx > -1; nx--)
+        {
+            int i, j;
+            double d;
+#pragma omp parallel for shared(dm, nx, u, f, NB, N, bsize) private(i, j, d)
+            for (i = 0; i < nx + 1; i++)
+            {
+                j = 2 * NB - nx - i;
+
+                d = eval(N, bsize, u, f, i, j);
+
+                if (dm[i] < d)
+                    dm[i] = d;
+            } // конец параллельной области
+        }
+
+        for (int i = 0; i < NB; i++)
+        {
+            if (dmax < dm[i])
+                dmax = dm[i];
+        }
 
         iters++;
     } while (dmax > eps);
 
     return iters;
+}
+double eval(int N, int bsize, double **u, double **f, int i, int j)
+{
+    double dmax = 0, dm, temp, h = 1 / (N + 1);
+
+    int x_s = 1 + i * bsize;
+    int x_f = min(x_s + bsize, N + 1);
+    int y_s = 1 + j * bsize;
+    int y_f = min(y_s + bsize, N + 1);
+
+    for (int x = x_s; x < x_f; x++)
+        for (int y = y_s; y < y_f; y++)
+        {
+            temp = u[x][y];
+            u[x][y] = 0.25 * (u[x - 1][y] + u[x + 1][y] + u[x][y - 1] + u[x][y + 1] - h * h * f[x][y]);
+            dm = fabs(temp - u[x][y]);
+            if (dmax < dm)
+                dmax = dm;
+        }
+
+    return dmax;
 }
 void test(int repeats, int threads, bool save_grid, alg run, prepare p, int N, double eps, double **u, double **f)
 {
@@ -245,6 +242,8 @@ void book_cond(int N, double **u, double **f)
     double range = (max - min);
     double div = RAND_MAX / range;
 
+    int h = 1 / (N + 1);
+
     // заполнение значениями
     for (int x = 0; x <= N + 1; x++)
     {
@@ -255,19 +254,19 @@ void book_cond(int N, double **u, double **f)
 
             if (y == 0) // нижняя грань
             {
-                u[x][y] = x * x;
+                u[x][y] = 100 - 200 * (x * h);
             }
             else if (x == 0) // левая грань
             {
-                u[x][y] = y;
+                u[x][y] = 100 - 200 * (y * h);
             }
             else if (y == N + 1) // верхняя грань
             {
-                u[x][y] = 2 * x + 1;
+                u[x][y] = -100 + 200 * (x * h);
             }
             else if (x == N + 1) // правая грань
             {
-                u[x][y] = 3 * y * y;
+                u[x][y] = -100 + 200 * (y * h);
             }
             else
             {
