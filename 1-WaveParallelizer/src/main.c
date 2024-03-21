@@ -63,15 +63,9 @@ int main(int argc, char *argv[])
         // test(repeats, threads[i], i == 0, &default_alg, book_cond, N, eps, u, f);
 
         printf("### Parallel alg 11.6 (book conditions)\n");
-        test(repeats, threads[i], true, &async_alg5, book_cond, N, eps, u, f);
+        test(repeats, threads[i], true, &async_alg5, trig_cond, N, eps, u, f);
 
         // ---
-
-        // printf("### Iterative algorithm (my conditions)\n");
-        // test(repeats, threads[i], &default_alg, trig_cond, N, eps, u, f);
-
-        // printf("### Parallel alg 11.6 (my conditions)\n");
-        // test(repeats, threads[i], &async_alg5, trig_cond, N, eps, u, f);
     }
 
     for (int i = 0; i <= N + 1; i++)
@@ -115,14 +109,12 @@ int default_alg(int N, double eps, double **u, double **f)
 }
 int async_alg5(int N, double eps, double **u, double **f)
 {
-    omp_lock_t dmax_lock;
-    omp_init_lock(&dmax_lock);
     double h = 1.0 / (N + 1);
-    double temp, dmax = 0;
 
-    const int bsize = 64;
-    int NB = 100; // количество блоков
-    double dm[N + 1];
+    const int bsize = 16; // размер блока
+    int NB = 100;         // количество блоков
+    double dm[NB];
+    double dmax = 0;
 
     int iters = 0;
 
@@ -252,17 +244,20 @@ void book_cond(int N, double **u, double **f)
             // f(x,y) = 0 на всём D
             f[x][y] = 0.0;
 
+            double xh = x * h;
+            double yh = y * h;
+
             if (y == 0) // нижняя грань
             {
-                u[x][y] = 100 - 200 * (x * h);
+                u[x][y] = 100 - 200 * xh;
             }
             else if (x == 0) // левая грань
             {
-                u[x][y] = 100 - 200 * (y * h);
+                u[x][y] = 100 - 200 * yh;
             }
             else if (y == N + 1) // верхняя грань
             {
-                u[x][y] = -100 + 200 * (x * h);
+                u[x][y] = -100 + 200 * xh;
             }
             else if (x == N + 1) // правая грань
             {
@@ -277,23 +272,46 @@ void book_cond(int N, double **u, double **f)
 }
 void trig_cond(int N, double **u, double **f)
 {
+    // Пусть будет квадратная область с граничными условиями (ниже)
+    // Для рандома
     double max = 100.0;
     double min = -100.0;
     double range = (max - min);
     double div = RAND_MAX / range;
 
-    double const e10 = pow(2.71, 10);
+    int h = 1 / (N + 1);
 
     // заполнение значениями
     for (int x = 0; x <= N + 1; x++)
     {
         for (int y = 0; y <= N + 1; y++)
         {
-            // e^x + e^y
-            f[x][y] = pow(2.71, x) + pow(2.71, y);
+            // f(x,y) = 0 на всём D
+            f[x][y] = 0.0;
 
-            // 100*sin(x)^3 + cos(y)*e^10
-            u[x][y] = 100 * pow(sin(x), 3) + cos(y) * e10;
+            double xh = x * h;
+            double yh = y * h;
+
+            if (y == 0) // нижняя грань
+            {
+                u[x][y] = 0;
+            }
+            else if (x == 0) // левая грань
+            {
+                u[x][y] = 0;
+            }
+            else if (y == N + 1) // верхняя грань
+            {
+                u[x][y] = 0;
+            }
+            else if (x == N + 1) // правая грань
+            {
+                u[x][y] = 0;
+            }
+            else
+            {
+                u[x][y] = min + (rand() / div);
+            }
         }
     }
 }
