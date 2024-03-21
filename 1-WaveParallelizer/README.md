@@ -1,14 +1,13 @@
 # WaveParallelizer
-Implementation of algorithms for solving partial differential equations. 1 sequential and 5 parallel algorithms are presented (using openMP).
+Implementation of algorithms for solving partial differential equations. (openMP)
 ## CI/Performance test
-The results of testing these algorithms are stored in artifacts. The efficiency comparison was made by comparing the algorithms speed on different numbers of threads.
-## Boundary value problem
-The boundary value problem was chosen to show the ability of the algorithms to process complex functions at the boundaries of the domain.
+- The results of testing these algorithms are stored in artifacts
+- **Measurements**: on differemt threads (1,2,4,8,16). 5 times run, average value of time was calculated.
+- **Boundary problems**: I choose function sin on borders to show how algorithm will approximate such periodic functions 
 ## Experiment conditions
-- **OC**: Ubuntu 23.10 x86_64
+- **OC**: Ubuntu 23.10 mantic x86_64
 - **PC**: VivoBook_ASUSLaptop X513EQN_S5
 - **CPU**: 11th Gen Intel i7-1165G7 (4 cores, 8 threads)
-- **For comparison** I use conditions from the book and my own conditions (you can find them in *trig_cond()*) 
 ## Results
 - Too many threads can harm performance (in my case, 16 threads work much slower than 8 due to amount of logic threads in my laptop).
 - Optimizing settings in compiler (*gcc -O3/-O2/-O1*) greatly affect performance (both for parallel and sequential algorithms, regardless of the number of threads)

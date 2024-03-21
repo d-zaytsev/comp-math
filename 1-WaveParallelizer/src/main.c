@@ -34,9 +34,7 @@ double eval(int N, int bsize, double **u, double **f, int i, int j);
 
 /// @brief Приминение условий из книги
 void book_cond(int N, double **u, double **f);
-
-/// @brief Простое краевое условие
-void trig_cond(int N, double **u, double **f);
+void test_cond(int N, double **u, double **f);
 
 int main(int argc, char *argv[])
 {
@@ -44,7 +42,7 @@ int main(int argc, char *argv[])
     double eps = 0.1;
 
     int threads[] = {1, 2, 4, 8, 16};
-    int repeats = 3;
+    int repeats = 5;
 
     double **u = malloc((N + 2) * sizeof(double *));
     double **f = malloc((N + 2) * sizeof(double *));
@@ -63,7 +61,7 @@ int main(int argc, char *argv[])
         // test(repeats, threads[i], i == 0, &default_alg, book_cond, N, eps, u, f);
 
         printf("### Parallel alg 11.6 (book conditions)\n");
-        test(repeats, threads[i], true, &async_alg5, trig_cond, N, eps, u, f);
+        test(repeats, threads[i], true, &async_alg5, test_cond, N, eps, u, f);
 
         // ---
     }
@@ -111,7 +109,7 @@ int async_alg5(int N, double eps, double **u, double **f)
 {
     double h = 1.0 / (N + 1);
 
-    const int bsize = 16; // размер блока
+    const int bsize = 64; // размер блока
     int NB = 100;         // количество блоков
     double dm[NB];
     double dmax = 0;
@@ -205,7 +203,7 @@ void test(int repeats, int threads, bool save_grid, alg run, prepare p, int N, d
         results[i] = omp_get_wtime() - time;
         average += results[i];
 
-        printf("%f\t", results[i]);
+        printf("%.4f\t", results[i]);
     }
 
     if (save_grid)
@@ -216,14 +214,28 @@ void test(int repeats, int threads, bool save_grid, alg run, prepare p, int N, d
         {
             for (int j = 0; j <= N + 1; j++)
             {
-                fprintf(file, "%f\t", u[i][j]);
+                fprintf(file, "%.4f\t", u[i][j]);
             }
             fprintf(file, "\n");
         }
         fclose(file);
     }
 
-    printf("Result: %fms, %i iterations\n", average / repeats, iters);
+    printf("Result: %.4fms, %i iterations", average / repeats, iters);
+
+    double variants = 0; // дисперсия данных
+    for (int i = 0; i < repeats; i++)
+    {
+        variants += pow(average - results[i], 2);
+    }
+    variants /= repeats;
+
+    // предел погрешности
+    double error_limit = 1.96 * (sqrt(variants) / sqrt(repeats));
+    double confidence_interval_left = average - error_limit;
+    double confidence_interval_right = average + error_limit;
+
+    printf(", conf int (%.4f,%.4f)\n", confidence_interval_left, confidence_interval_right);
 }
 void book_cond(int N, double **u, double **f)
 {
@@ -270,7 +282,7 @@ void book_cond(int N, double **u, double **f)
         }
     }
 }
-void trig_cond(int N, double **u, double **f)
+void test_cond(int N, double **u, double **f)
 {
     // Пусть будет квадратная область с граничными условиями (ниже)
     // Для рандома
@@ -294,19 +306,19 @@ void trig_cond(int N, double **u, double **f)
 
             if (y == 0) // нижняя грань
             {
-                u[x][y] = 0;
+                u[x][y] = sin(xh);
             }
             else if (x == 0) // левая грань
             {
-                u[x][y] = 0;
+                u[x][y] = sin(yh);
             }
             else if (y == N + 1) // верхняя грань
             {
-                u[x][y] = 0;
+                u[x][y] = sin(xh);
             }
             else if (x == N + 1) // правая грань
             {
-                u[x][y] = 0;
+                u[x][y] = sin(yh);
             }
             else
             {
