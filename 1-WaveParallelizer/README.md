@@ -9,7 +9,8 @@ Implementation of algorithms for solving partial differential equations. (openMP
 - **PC**: VivoBook_ASUSLaptop X513EQN_S5
 - **CPU**: 11th Gen Intel i7-1165G7 (4 cores, 8 threads)
 ## Results
-- Too many threads can harm performance (in my case, 16 threads work much slower than 8 due to amount of logic threads in my laptop).
-- Optimizing settings in compiler (*gcc -O3/-O2/-O1*) greatly affect performance (both for parallel and sequential algorithms, regardless of the number of threads)
+- Too many threads can harm performance (in my case, 16 threads work much slower than 8 due to amount of logic threads in my laptop). Initially, it was expected that as the number of threads increases, performance will only increase
+- Optimizing settings in compiler (*gcc -O3/-O2/-O1*) greatly affect performance (both for parallel and sequential algorithms, regardless of the number of threads). The book we have read don't say this.
 - The complexity of boundary value problems can also affect performance (Complexity of functions at boundaries increases running time). In my case, when I use trigonometric functions performance could drop up to 5 times.
 - The mesh size also significantly affects the speed of operation. When its size doubles, the speed drops tens of times.
+- As it is written in the book, the quality of approximation is greatly influenced by epsilon, grid size and number of blocks.
