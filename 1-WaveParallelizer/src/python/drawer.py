@@ -1,8 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import os
 
 build_folder = sys.argv[1]
+print(os.listdir(build_folder))
+
 file = np.loadtxt(build_folder + "/grid.txt")
 
 x = np.linspace(0, 1, file.shape[0])
@@ -18,4 +21,4 @@ ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 
 plt.savefig(build_folder + "/picture.png")
-plt.show()
+# plt.show()
