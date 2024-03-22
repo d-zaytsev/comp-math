@@ -34,11 +34,11 @@ double eval(int N, int bsize, double **u, double **f, int i, int j);
 
 /// @brief Приминение условий из книги
 void book_cond(int N, double **u, double **f);
-void test_cond(int N, double **u, double **f);
+void sin_cond(int N, double **u, double **f);
 
 int main(int argc, char *argv[])
 {
-    int N = 100;
+    int N = 1000;
     double eps = 0.1;
 
     int threads[] = {1, 2, 4, 8, 16};
@@ -58,12 +58,10 @@ int main(int argc, char *argv[])
         printf("\nThreads: %i\n", threads[i]);
 
         printf("### Iterative algorithm (book conditions)\n");
-        test(repeats, threads[i], false, &default_alg, book_cond, N, eps, u, f);
+        test(repeats, threads[i], false, &default_alg, sin_cond, N, eps, u, f);
 
         printf("### Parallel alg 11.6 (test conditions)\n");
-        test(repeats, threads[i], false, &async_alg5, test_cond, N, eps, u, f);
-
-        // ---
+        test(repeats, threads[i], false, &async_alg5, sin_cond, N, eps, u, f);
     }
 
     for (int i = 0; i <= N + 1; i++)
@@ -110,7 +108,7 @@ int async_alg5(int N, double eps, double **u, double **f)
     double h = 1.0 / (N + 1);
 
     const int bsize = 64; // размер блока
-    int NB = 100;         // количество блоков
+    int NB = 16;          // количество блоков
     double dm[NB];
     double dmax = 0;
 
@@ -262,19 +260,19 @@ void book_cond(int N, double **u, double **f)
 
             if (y == 0) // нижняя грань
             {
-                u[x][y] = 100 - 200 * xh;
+                u[x][y] = 100 - 200 * x;
             }
             else if (x == 0) // левая грань
             {
-                u[x][y] = 100 - 200 * yh;
+                u[x][y] = 100 - 200 * y;
             }
             else if (y == N + 1) // верхняя грань
             {
-                u[x][y] = -100 + 200 * xh;
+                u[x][y] = -100 + 200 * x;
             }
             else if (x == N + 1) // правая грань
             {
-                u[x][y] = -100 + 200 * (y * h);
+                u[x][y] = -100 + 200 * y;
             }
             else
             {
@@ -283,7 +281,7 @@ void book_cond(int N, double **u, double **f)
         }
     }
 }
-void test_cond(int N, double **u, double **f)
+void sin_cond(int N, double **u, double **f)
 {
     // Пусть будет квадратная область с граничными условиями (ниже)
     // Для рандома
@@ -307,19 +305,19 @@ void test_cond(int N, double **u, double **f)
 
             if (y == 0) // нижняя грань
             {
-                u[x][y] = sin(xh);
+                u[x][y] = sin(x);
             }
             else if (x == 0) // левая грань
             {
-                u[x][y] = sin(yh);
+                u[x][y] = sin(y);
             }
             else if (y == N + 1) // верхняя грань
             {
-                u[x][y] = sin(xh);
+                u[x][y] = sin(x);
             }
             else if (x == N + 1) // правая грань
             {
-                u[x][y] = sin(yh);
+                u[x][y] = sin(x);
             }
             else
             {
