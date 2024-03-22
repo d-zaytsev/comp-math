@@ -6,7 +6,7 @@
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
-#define PATH "../grid.txt" // файл куда сетку сохранять
+#define PATH "../build/grid.txt" // файл куда сетку сохранять
 
 typedef int (*alg)(int, double, double **, double **);
 typedef void (*prepare)(int, double **, double **);
