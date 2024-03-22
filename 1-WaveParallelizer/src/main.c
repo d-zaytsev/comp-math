@@ -6,7 +6,7 @@
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
-#define PATH "../build/grid.txt" // файл куда сетку сохранять
+#define PATH "../grid.txt" // файл куда сетку сохранять
 
 typedef int (*alg)(int, double, double **, double **);
 typedef void (*prepare)(int, double **, double **);
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
         test(repeats, threads[i], false, &default_alg, sin_cond, N, eps, u, f);
 
         printf("### Parallel alg 11.6 (sin conditions)\n");
-        test(repeats, threads[i], true, &async_alg5, sin_cond, N, eps, u, f);
+        test(repeats, threads[i], false, &async_alg5, sin_cond, N, eps, u, f);
     }
 
     for (int i = 0; i <= N + 1; i++)

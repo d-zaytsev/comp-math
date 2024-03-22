@@ -4,7 +4,6 @@ import sys
 import os
 
 folder = sys.argv[1]
-print(os.listdir("/home/runner/work/comp-math/comp-math/1-WaveParallelizer"))
 
 file = np.loadtxt(folder + "/grid.txt")
 
