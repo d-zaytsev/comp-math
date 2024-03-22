@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 import sys
 import os
 
-build_folder = sys.argv[1]
+folder = sys.argv[1]
 print(os.listdir("/home/runner/work/comp-math/comp-math/1-WaveParallelizer"))
 
-file = np.loadtxt(build_folder + "/grid.txt")
+file = np.loadtxt(folder + "/grid.txt")
 
 x = np.linspace(0, 1, file.shape[0])
 y = np.linspace(0, 1, file.shape[1])
@@ -20,5 +20,5 @@ ax.set_xlabel('X')
 ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 
-plt.savefig(build_folder + "/picture.png")
+plt.savefig(folder + "/picture.png")
 # plt.show()
