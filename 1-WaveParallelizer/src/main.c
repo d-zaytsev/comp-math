@@ -6,8 +6,7 @@
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
-#define NB_F 10                                                                  // размер блока
-#define PATH "/home/dmitriy/Desktop/comp-math/1-WaveParallelizer/build/grid.txt" // файл куда сетку сохранять
+#define PATH "../build/grid.txt" // файл куда сетку сохранять
 
 typedef int (*alg)(int, double, double **, double **);
 typedef void (*prepare)(int, double **, double **);
@@ -38,7 +37,7 @@ void sin_cond(int N, double **u, double **f);
 
 int main(int argc, char *argv[])
 {
-    int N = 1000;
+    int N = 100;
     double eps = 0.1;
 
     int threads[] = {1, 2, 4, 8, 16};
@@ -57,11 +56,11 @@ int main(int argc, char *argv[])
     {
         printf("\nThreads: %i\n", threads[i]);
 
-        printf("### Iterative algorithm (book conditions)\n");
+        printf("### Iterative algorithm (sin conditions)\n");
         test(repeats, threads[i], false, &default_alg, sin_cond, N, eps, u, f);
 
-        printf("### Parallel alg 11.6 (test conditions)\n");
-        test(repeats, threads[i], false, &async_alg5, sin_cond, N, eps, u, f);
+        printf("### Parallel alg 11.6 (sin conditions)\n");
+        test(repeats, threads[i], true, &async_alg5, sin_cond, N, eps, u, f);
     }
 
     for (int i = 0; i <= N + 1; i++)
@@ -108,7 +107,7 @@ int async_alg5(int N, double eps, double **u, double **f)
     double h = 1.0 / (N + 1);
 
     const int bsize = 64; // размер блока
-    int NB = 16;          // количество блоков
+    int NB = 5;           // количество блоков
     double dm[NB];
     double dmax = 0;
 
@@ -317,7 +316,7 @@ void sin_cond(int N, double **u, double **f)
             }
             else if (x == N + 1) // правая грань
             {
-                u[x][y] = sin(x);
+                u[x][y] = sin(y);
             }
             else
             {
