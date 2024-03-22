@@ -51,7 +51,7 @@ jobs:
        pip install -r ${{github.workspace}}/1-WaveParallelizer/src/python/requirements.txt
 
     - name: Draw picture
-      run: python3 ${{github.workspace}}/1-WaveParallelizer/src/python/drawer.py
+      run: python3 ${{github.workspace}}/1-WaveParallelizer/src/python/drawer.py ${{env.BUILD_FOLDER}}
 
     - name: Upload Results
       uses: actions/upload-artifact@v2
