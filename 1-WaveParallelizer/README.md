@@ -12,9 +12,10 @@ Implementation of the function approximation search algorithm (using C+openMP).
 - **CPU**: 11th Gen Intel i7-1165G7 (4 cores, 8 threads).
 
 ## Results
+[experiments.xlsx](https://github.com/d-zaytsev/comp-math/files/14735101/experiments.xlsx)
 - Too many threads can harm performance (in my case, 16 threads work much slower than 8 due to amount of logic threads in my laptop). Initially, it was expected that as the number of threads increases, performance will only increase;
   
 - Optimizing settings in compiler (*gcc -O3/-O2/-O1*) greatly affect performance (both for parallel and sequential algorithms, regardless of the number of threads). The book we have read don't say this;
 - The complexity of boundary value problems can also affect performance (Complexity of functions at boundaries increases running time). In my case, when I use trigonometric functions performance could drop up to 5 times;
-- The mesh size also significantly affects the speed of operation. When its size doubles, the speed drops tens of times;
+- The mesh size also significantly affects the speed of operation. The acceleration during parallel running is noticeable only with sufficiently large mesh sizes and small epsilon sizes;
 - As it is written in the book, the quality of approximation is greatly influenced by epsilon, grid size and number of blocks.
