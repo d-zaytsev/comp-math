@@ -28,10 +28,21 @@ From the researches I read and personal reflections, I realized that cubic splin
 | $f(x) = frac(12*x/\pi)$ | $f(x) = frac(12*x/\pi)$|
 |---|---|
 |![image](https://github.com/d-zaytsev/comp-math/assets/113129532/e2ed49c9-9916-4726-b30c-b0b532b18d08)|![image](https://github.com/d-zaytsev/comp-math/assets/113129532/d5381daf-ac81-4bab-9cde-a66c08dbf142)|
+
+### Quadratic B-Spline
+*B-splines, even on simple functions, did not give as good a result as cubic splines.*
+| $f(x) = -x^2 + x $  | $f(x) = sin(5*\pi*x)$  |
+|---|---|
+| ![image](https://github.com/d-zaytsev/comp-math/assets/113129532/a7ca700e-9dbd-46c5-aedb-d9f644baa1cd) | ![image](https://github.com/d-zaytsev/comp-math/assets/113129532/eff38008-9aa8-4af0-9048-501753b06b59)|
+
+*It was also decided to repeat the experiment from the article (the link is below). The result was approximately similar.*
+| $f(x) = \mid cos(3 \pi x) \mid $  |
+|---|
+| ![image](https://github.com/d-zaytsev/comp-math/assets/113129532/140cd5ad-16ff-41f1-8c82-8c255c826300) |
 ## Approximation estimate
 During testing, the obtained results were evaluated using a special function. It splits the original function and the function obtained by approximation into nodes and checked the values in them. Thus, it was possible evaluate the success of the approximation.
 
-### Materials
+## Materials
 The following articles were used in preparing the experiments:
 - [Approximation of discontinuous functions](https://arxiv.org/ftp/arxiv/papers/1601/1601.05132.pdf)
 - [Quadratic B-Spline](https://core.ac.uk/download/pdf/82327690.pdf)
