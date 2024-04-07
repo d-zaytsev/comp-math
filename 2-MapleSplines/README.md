@@ -7,4 +7,4 @@ During testing, the obtained results were evaluated using a special function. It
 
 ### Materials
 The following articles were used in preparing the experiments:
-- [Approximation of discontinuous functions] (https://arxiv.org/ftp/arxiv/papers/1601/1601.05132.pdf)
+- [Approximation of discontinuous functions](https://arxiv.org/ftp/arxiv/papers/1601/1601.05132.pdf)
