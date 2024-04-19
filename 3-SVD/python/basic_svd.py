@@ -11,23 +11,18 @@ def svd_compression(color_matrix, n):
         color_matrix: Матрица со значениями цвета
         n: Ранг матрицы (чем меньше, тем больше жмых)
     """
-    ev, v = eigh(color_matrix.T @ color_matrix)  # собственные числа и вектора
 
-    ui = []
+    evals, evcs = np.linalg.eig(color_matrix.T @ color_matrix)
 
-    for i in range(len(color_matrix)):
-        # переворот жоски
-        vi = color_matrix @ v[:, i]
-        # нормируем вектора
-        ui.append(vi / norm(vi))
+    singular_values_sorted = np.sort(evals)[::-1]
 
-    # Новая матрица из отнормированных собственных векторов
-    u = np.array(ui).T
+    V = np.column_stack(evcs)
 
-    # Диагональная матрица
-    s = np.round(u.T @ color_matrix @ v, 5)
+    U = (color_matrix @ V) / singular_values_sorted
 
-    return u[:, :n], s[:n, :n], v[:n, :]
+    S = U.T @ color_matrix @ V
+
+    return U[:, :n], S[:n, :n], V[:n, :]
 
 
 def get_matrix(u, s, v):
@@ -37,8 +32,8 @@ def get_matrix(u, s, v):
 N = 10
 path = '/home/dmitriy/Desktop'
 image = path + '/default.bmp'
-compressed_image = path + '/compressed.bmp'
-compressed_file = path + '/data.rofl'
+compressed_image = path + '/compressed1.bmp'
+compressed_file = path + '/data1.rofl'
 
 # Получаем цвета и размеры из файла
 red, green, blue = iu.matrices_from_file(image)
