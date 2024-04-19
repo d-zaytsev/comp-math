@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.linalg import eigh, norm
 import image_utils as iu
 import saver
 
@@ -12,9 +11,9 @@ def svd_compression(color_matrix, n):
         n: Ранг матрицы (чем меньше, тем больше жмых)
     """
 
-    evals, evcs = np.linalg.eig(color_matrix.T @ color_matrix)
+    evals, evcs = np.linalg.eig(color_matrix.T @ color_matrix)  # собственные числа / вектора
 
-    singular_values_sorted = np.sort(evals)[::-1]
+    singular_values_sorted = np.sort(evals)[::-1] # перевёртыш
 
     V = np.column_stack(evcs)
 
