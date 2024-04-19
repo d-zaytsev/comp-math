@@ -1,5 +1,6 @@
 import numpy as np
 import image_utils as iu
+import saver
 
 
 def svd_compression(color_matrix, n):
@@ -23,12 +24,13 @@ def get_matrix(u, s, v):
 
 N = 10
 path = '/home/dmitriy/Desktop'
-file = path + '/default.bmp'
-cfile = path + '/compressed.bmp'
+image = path + '/default.bmp'
+compressed_image = path + '/compressed.bmp'
+compressed_file = path + '/data.rofl'
 
 # Получаем цвета и размеры из файла
-red, green, blue = iu.matrices_from_file(file)
-width, height = iu.file_size(file)
+red, green, blue = iu.matrices_from_file(image)
+width, height = iu.file_size(image)
 
 # Жмыхаем цвета (каждую матрицу отдельно обрабатываем)
 
@@ -38,11 +40,9 @@ red = get_matrix(*svd_compression(red, N))
 green = get_matrix(*svd_compression(green, N))
 blue = get_matrix(*svd_compression(blue, N))
 
-# Засовываем матрицы обратно в файл
-iu.file_from_matrices(cfile, width, height, red, green, blue)
+# Сохраняем матрицы в файл
+saver.create(compressed_file, width, height, N)
+saver.write_matrices(compressed_file, svd_compression(red, N), svd_compression(green, N), svd_compression(blue, N))
 
-import saver
-
-saver.create('/home/dmitriy/Desktop/data.rofl', width, height, N)
-saver.write_matrices('/home/dmitriy/Desktop/data.rofl', svd_compression(red, N), svd_compression(green, N),
-                     svd_compression(blue, N))
+print('N:', N, '\nwidth:', width, '\nheight:', height)
+print('compressed data:', saver.file_size(compressed_file), '\nimage:', saver.file_size(image))

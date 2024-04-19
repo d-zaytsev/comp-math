@@ -8,6 +8,7 @@ U: по 1 байту каждое значение, len(U) = height
 SIGMA: по 1 байту каждое значение, len(SIGMA) = N
 V: по 1 байту каждое значение, len(V) = N
 """
+import os
 
 
 def create(path, width, height, n):
@@ -27,6 +28,9 @@ def write_matrices(path, red, green, blue):
             for x in item:  # u s v
                 file.write(x)
 
+
+def file_size(path):
+    return str((os.path.getsize(path) // 1024)) + ' Kbs'
 
 def read_matrices(path):
     with open(path, "rb") as file:
