@@ -34,11 +34,11 @@ width, height = iu.file_size(image)
 
 # Жмыхаем цвета (каждую матрицу отдельно обрабатываем)
 
-# height, max(N, height), max(N, height)
-
 red = get_matrix(*svd_compression(red, N))
 green = get_matrix(*svd_compression(green, N))
 blue = get_matrix(*svd_compression(blue, N))
+
+iu.file_from_matrices(compressed_image, width, height, red, green, blue)
 
 # Сохраняем матрицы в файл
 saver.create(compressed_file, width, height, N)
