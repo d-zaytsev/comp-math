@@ -10,7 +10,6 @@ def svd_compression(color_matrix, n):
         color_matrix: Матрица со значениями цвета
         n: Ранг матрицы (чем меньше, тем больше жмых)
     """
-
     evals, evcs = np.linalg.eig(np.dot(color_matrix.T, color_matrix))
 
     singular_values_sorted = np.sort(np.sqrt(evals))[::-1]
@@ -39,11 +38,11 @@ red, green, blue = iu.matrices_from_file(image)
 width, height = iu.file_size(image)
 
 # Жмыхаем цвета (каждую матрицу отдельно обрабатываем)
-red = get_matrix(*svd_compression(red, N))
-green = get_matrix(*svd_compression(green, N))
-blue = get_matrix(*svd_compression(blue, N))
+compressed_red = get_matrix(*svd_compression(red, N))
+compressed_green = get_matrix(*svd_compression(green, N))
+compressed_blue = get_matrix(*svd_compression(blue, N))
 
-iu.file_from_matrices(compressed_image, width, height, red, green, blue)
+iu.file_from_matrices(compressed_image, width, height, compressed_red, compressed_green, compressed_blue)
 
 # Сохраняем матрицы в файл
 saver.create(compressed_file, width, height, N)

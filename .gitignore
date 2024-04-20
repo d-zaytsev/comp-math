@@ -12,3 +12,5 @@ CTestTestfile.cmake
 _deps
 helper.txt
 .idea/
+*.pyc
+*.pyc
