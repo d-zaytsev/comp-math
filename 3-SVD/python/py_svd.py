@@ -44,5 +44,7 @@ iu.file_from_matrices(compressed_image, width, height, red, green, blue)
 saver.create(compressed_file, width, height, N)
 saver.write_matrices(compressed_file, svd_compression(red, N), svd_compression(green, N), svd_compression(blue, N))
 
+print(svd_compression(red, N)[1])
+
 print('N:', N, '\nwidth:', width, '\nheight:', height)
 print('compressed data:', saver.file_size(compressed_file), '\nimage:', saver.file_size(image))
