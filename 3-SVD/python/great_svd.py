@@ -3,41 +3,32 @@ import image_utils as iu
 import saver
 
 
-def svd_compression(color_matrix, n):
-    U, sigma, V = np.linalg.svd(color_matrix, full_matrices=True)
+def svd_compression(A, n):
+    mu, sigma = 0, 1
+    x = np.random.normal(mu, sigma, size=A.shape[1])
 
-    U = U[:, :n]
-    sigma = np.diag(sigma[:n])
-    V = V[:n, :]
-    A = np.dot(U, np.dot(sigma, V))
+    M = A.T @ A
 
-    for k in range(10000000000):
-        w = A @ np.pow(V[k], k - 1)
-        a = np.linalg.norm(w)
-        u = w / a
+    for _ in range(10):
+        x = M @ x
 
-        z = A.T @ u
-        B = np.linalg.norm(z)
-        v = z / B
+    v = x / np.linalg.norm(x)
+    sigma = np.linalg.norm(A @ v)
+    u = A @ v / sigma
 
-        error = np.linalg.norm(A @ v - B * u)
-        sigma[0] = B
-        if error < 1:
-            print(error, k)
-            break
-
-    return U, sigma, V
+    return np.reshape(u, (A.shape[0], 1)), sigma, np.reshape(v, (A.shape[1], 1))
 
 
 def get_matrix(u, s, v):
-    return np.dot(u, np.dot(s, v))
+    return u @ v.T * s
 
 
-N = 10
-path = "C:\\Users\\dmitriy\\Desktop"
-image = path + '\\default2.jpg'
-compressed_image = path + '\\compressed.bmp'
-compressed_file = path + '\\data.rofl'
+N = 426
+
+path = "/home/dmitriy/Desktop"
+image = path + '/default1.bmp'
+compressed_image = path + '/compressed.bmp'
+compressed_file = path + '/data.rofl'
 
 # Получаем цвета и размеры из файла
 red, green, blue = iu.matrices_from_file(image)
