@@ -22,11 +22,11 @@ def get_matrix(u, s, v):
     return np.dot(u, np.dot(s, v))
 
 
-N = 10
-path = "C:\\Users\\dmitriy\\Desktop"
-image = path + '\\default.bmp'
-compressed_image = path + '\\compressed.bmp'
-compressed_file = path + '\\data.rofl'
+N = 1
+path = "/home/dmitriy/Desktop"
+image = path + '/default1.bmp'
+compressed_image = path + '/compressed.bmp'
+compressed_file = path + '/data.rofl'
 
 # Получаем цвета и размеры из файла
 red, green, blue = iu.matrices_from_file(image)
