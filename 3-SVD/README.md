@@ -67,3 +67,6 @@ the file stores metadata (H, width and height of the source image) and the matri
 | Compressed image | ![resize](https://github.com/d-zaytsev/comp-math/assets/113129532/ea958982-9a2a-4869-b45c-349d221cc2fa) | ![resize](https://github.com/d-zaytsev/comp-math/assets/113129532/fdb61eef-514c-4cbb-bc74-beaca9e6a385) | ![resize](https://github.com/d-zaytsev/comp-math/assets/113129532/d2507ad2-37d7-486f-9340-d3b89a12cad5) |
 | Time | 0.7s | 2.7s | 0.3s |
 | N | 200 | 200 | 200 |
+
+## Results
+According to the experiments, the standard numpy algorithm implementation and its improved version turned out to be the most effective. At the same time, with low compression, the standard numpy method is the most effective algorithm. With the primitive algorithm, compression is worse due to the fact that complex numbers are used in calculations. Also, when using an improved algorithm, it was noticed that compression artifacts may appear on some images.
