@@ -32,6 +32,7 @@ def write_matrices(path, red, green, blue):
 def file_size(path):
     return str((os.path.getsize(path) // 1024)) + ' Kbs'
 
+
 def read_matrices(path):
     with open(path, "rb") as file:
         data = [x.to_bytes() for x in file.read()]
