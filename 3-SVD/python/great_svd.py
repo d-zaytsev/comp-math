@@ -6,38 +6,27 @@ import saver
 
 
 def svd_compression(A, s):
-    n = np.shape(A[0])
-    m = np.shape(A[1])
+    m = A.shape[1]
+    P = np.random.randn(m, s)
+    Z = A @ P
 
-    U, sigma, V = np.linalg.svd(A, full_matrices=True)
+    iters = 10
+    for _ in range(iters):
+        Z = A @ (A.T @ Z)
 
-    U = U[:, :s]
-    sigma = np.diag(sigma[:s])
-    V = V[:, :s]
+    Q, _ = np.linalg.qr(Z, mode='reduced')
+    Y = Q.T @ A
+    UY, sigma, V = np.linalg.svd(Y, full_matrices=False)
+    U = Q @ UY
 
-    # A = n x m
-    # U = n x s
-    # V = m x s
-
-    err = 100
-    while err > 0.001:
-        Q, R = np.linalg.qr(A @ V)
-        newU = Q[:, 1:s]
-        Q, R = np.linalg.qr(A.T @ U)
-        V = Q[:, 1:s]
-        U = newU
-        sigma = R[1:s, 1:s]
-        err = np.linalg.norm(A @ V - U @ sigma)
-
-    return U, sigma, V
+    return U, np.diag(sigma), V
 
 
 def get_matrix(u, s, v):
-    print(u.shape, s.shape, v.shape)
-    return (u @ s) / v
+    return u @ s @ v
 
 
-N = 100
+N = 10
 path = "/home/dmitriy/Desktop"
 image = path + '/default1.bmp'
 compressed_image = path + '/compressed.bmp'
