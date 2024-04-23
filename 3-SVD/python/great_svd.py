@@ -10,7 +10,7 @@ def svd_compression(A, s):
     P = np.random.randn(m, s)
     Z = A @ P
 
-    iters = 10
+    iters = 5
     for _ in range(iters):
         Z = A @ (A.T @ Z)
 
@@ -26,9 +26,9 @@ def get_matrix(u, s, v):
     return u @ s @ v
 
 
-N = 10
+N = 1
 path = "/home/dmitriy/Desktop"
-image = path + '/default1.bmp'
+image = path + '/default.bmp'
 compressed_image = path + '/compressed.bmp'
 compressed_file = path + '/data.rofl'
 
