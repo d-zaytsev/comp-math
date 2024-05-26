@@ -26,9 +26,3 @@ for n in [1, 2, 7, 10]:
         hs.append(h)
 
         print(f'{n},{s}: {res}, {err}')
-plt.loglog(hs, errs, 'o')
-plt.xlabel('h')
-plt.ylabel('Error')
-plt.title('Convergence Rate of FEM')
-plt.grid(True)
-plt.show()

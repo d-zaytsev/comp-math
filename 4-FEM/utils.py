@@ -43,11 +43,10 @@ def build_system(lam, x, n, h):
     """
         Задаёт всю систему линейных уравнений
     """
-    # лево
     a = np.zeros(n)
     b = np.zeros(n)
     c = np.zeros(n)
-    # право
+
     d = np.zeros(n)
 
     for i in range(1, n + 1):
