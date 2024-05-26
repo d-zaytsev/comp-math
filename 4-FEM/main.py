@@ -1,5 +1,4 @@
 from math import pi
-import matplotlib.pyplot as plt
 
 from utils import *
 
