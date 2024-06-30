@@ -1,4 +1,4 @@
 # 😊 comp-math
-Computational mathematics homework.
+Computational mathematics homework. 
 
-Technologies: Maple, Python (numpy, pillow), C (OpenMP)
+**Technologies**: Maple, Python (numpy, pillow), C (OpenMP)
